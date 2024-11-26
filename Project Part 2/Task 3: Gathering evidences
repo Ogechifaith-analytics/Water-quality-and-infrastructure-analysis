@@ -1,0 +1,284 @@
+/* Well this query is massive and complex, so maybe it is a good idea to save this as a CTE, 
+so when we do more analysis, we can just call that CTE like it was a table. */
+WITH Incorrect_records AS(
+SELECT
+a.location_id AS location_id,
+v.record_id,
+e.employee_name,
+a.true_water_source_score AS auditor_score,
+wq.subjective_quality_score AS surveyor_score
+FROM 
+auditor_report a
+JOIN 
+visits v
+ON a.location_id = v.location_id
+JOIN
+water_quality wq
+ON v.record_id = wq.record_id
+JOIN 
+employee e
+ON v.assigned_employee_id = e.assigned_employee_id
+WHERE v.visit_count = 1 AND
+a.true_water_source_score != wq.subjective_quality_score
+)
+SELECT *
+FROM Incorrect_records;
+
+-- Let's first get a unique list of employees from this table.
+WITH Incorrect_records AS(
+SELECT
+a.location_id AS location_id,
+v.record_id,
+e.employee_name,
+a.true_water_source_score AS auditor_score,
+wq.subjective_quality_score AS surveyor_score
+FROM 
+auditor_report a
+JOIN 
+visits v
+ON a.location_id = v.location_id
+JOIN
+water_quality wq
+ON v.record_id = wq.record_id
+JOIN 
+employee e
+ON v.assigned_employee_id = e.assigned_employee_id
+WHERE v.visit_count = 1 AND
+a.true_water_source_score != wq.subjective_quality_score
+)
+SELECT DISTINCT employee_name
+FROM Incorrect_records;
+
+/* Next, let's try to calculate how many mistakes each employee made. So basically we want to count how many
+ times their name is in Incorrect_records list, and then group them by name, right?*/
+WITH Incorrect_records AS(
+SELECT
+a.location_id AS location_id,
+v.record_id,
+e.employee_name,
+a.true_water_source_score AS auditor_score,
+wq.subjective_quality_score AS surveyor_score
+FROM 
+auditor_report a
+JOIN 
+visits v
+ON a.location_id = v.location_id
+JOIN
+water_quality wq
+ON v.record_id = wq.record_id
+JOIN 
+employee e
+ON v.assigned_employee_id = e.assigned_employee_id
+WHERE v.visit_count = 1 AND
+a.true_water_source_score != wq.subjective_quality_score
+)
+SELECT *
+FROM Incorrect_records;
+
+-- Let's first get a unique list of employees from this table.
+WITH Incorrect_records AS(
+SELECT
+a.location_id AS location_id,
+v.record_id,
+e.employee_name,
+a.true_water_source_score AS auditor_score,
+wq.subjective_quality_score AS surveyor_score
+FROM 
+auditor_report a
+JOIN 
+visits v
+ON a.location_id = v.location_id
+JOIN
+water_quality wq
+ON v.record_id = wq.record_id
+JOIN 
+employee e
+ON v.assigned_employee_id = e.assigned_employee_id
+WHERE v.visit_count = 1 AND
+a.true_water_source_score != wq.subjective_quality_score
+)
+SELECT DISTINCT employee_name,
+COUNT(employee_name) AS number_of_mistakes
+FROM Incorrect_records
+GROUP BY employee_name;
+
+/* So let's try to find all of the employees who have an above-average number of mistakes.
+ Let's break it down into steps first: 1. We have to first calculate the number of times someone's name comes up.
+ (we just did that in the previous query). Let's call it error_count.*/
+WITH error_count AS(
+SELECT DISTINCT employee_name,
+COUNT(employee_name) AS number_of_mistakes
+FROM (
+SELECT
+a.location_id AS location_id,
+v.record_id,
+e.employee_name,
+a.true_water_source_score AS auditor_score,
+wq.subjective_quality_score AS surveyor_score
+FROM 
+auditor_report a
+JOIN 
+visits v
+ON a.location_id = v.location_id
+JOIN
+water_quality wq
+ON v.record_id = wq.record_id
+JOIN 
+employee e
+ON v.assigned_employee_id = e.assigned_employee_id
+WHERE v.visit_count = 1 AND
+a.true_water_source_score != wq.subjective_quality_score
+) AS incorrect_records
+GROUP BY employee_name
+)
+SELECT *
+FROM error_count;
+
+-- 2. average number of mistakes employees made. 
+WITH error_count AS(
+SELECT DISTINCT employee_name,
+COUNT(employee_name) AS number_of_mistakes
+FROM (
+SELECT
+a.location_id AS location_id,
+v.record_id,
+e.employee_name,
+a.true_water_source_score AS auditor_score,
+wq.subjective_quality_score AS surveyor_score
+FROM 
+auditor_report a
+JOIN 
+visits v
+ON a.location_id = v.location_id
+JOIN
+water_quality wq
+ON v.record_id = wq.record_id
+JOIN 
+employee e
+ON v.assigned_employee_id = e.assigned_employee_id
+WHERE v.visit_count = 1 AND
+a.true_water_source_score != wq.subjective_quality_score
+) AS incorrect_records
+GROUP BY employee_name
+)
+SELECT AVG(number_of_mistakes) as avg_error_count_per_empl
+FROM error_count;
+
+/* 3. Finaly we have to compare each employee's error_count with avg_error_count_per_empl. 
+We will call this results set our suspect_list. Remember that we can't use an aggregate result in WHERE, 
+so we have to use avg_error_count_per_empl as a subquery.*/
+WITH error_count AS(
+SELECT DISTINCT employee_name,
+COUNT(employee_name) AS number_of_mistakes
+FROM (
+SELECT
+a.location_id AS location_id,
+v.record_id,
+e.employee_name,
+a.true_water_source_score AS auditor_score,
+wq.subjective_quality_score AS surveyor_score
+FROM 
+auditor_report a
+JOIN 
+visits v
+ON a.location_id = v.location_id
+JOIN
+water_quality wq
+ON v.record_id = wq.record_id
+JOIN 
+employee e
+ON v.assigned_employee_id = e.assigned_employee_id
+WHERE v.visit_count = 1 AND
+a.true_water_source_score != wq.subjective_quality_score
+) AS incorrect_records
+GROUP BY employee_name
+)
+SELECT
+employee_name,
+number_of_mistakes
+FROM error_count
+WHERE number_of_mistakes >  (SELECT AVG(number_of_mistakes) as avg_error_count_per_empl
+FROM error_count);
+
+-- Convert Incorrect_records to a view
+CREATE VIEW Incorrect_records AS (
+SELECT
+a.location_id,
+v.record_id,
+e.employee_name,
+a.true_water_source_score AS auditor_score,
+wq.subjective_quality_score AS surveyor_score,
+a.statements AS statements
+FROM
+auditor_report a
+JOIN
+visits v
+ON a.location_id = v.location_id
+JOIN
+water_quality wq
+ON v.record_id = wq.record_id
+JOIN
+employee e
+ON e.assigned_employee_id = v.assigned_employee_id
+WHERE
+v.visit_count = 1
+AND a.true_water_source_score != wq.subjective_quality_score);
+
+SELECT * FROM incorrect_records;
+
+
+-- convert the suspect_list to a CTE
+WITH suspect_list AS(
+SELECT
+employee_name,
+number_of_mistakes
+FROM error_count
+WHERE number_of_mistakes > (SELECT AVG(number_of_mistakes) as avg_error_count_per_empl FROM error_count)
+) 
+SELECT * 
+FROM suspect_list;
+
+/*Now we can filter that Incorrect_records view to identify all of the records associated with the
+ four employees we identified.*/
+WITH suspect_list AS(
+SELECT
+employee_name,
+number_of_mistakes
+FROM error_count
+WHERE number_of_mistakes > (SELECT AVG(number_of_mistakes) as avg_error_count_per_empl FROM error_count)
+)
+SELECT employee_name, location_id, statements
+FROM incorrect_records
+WHERE employee_name IN (SELECT employee_name FROM suspect_list);
+
+-- Filter the records that refer to "cash"
+WITH suspect_list AS(
+SELECT
+employee_name,
+number_of_mistakes
+FROM error_count
+WHERE number_of_mistakes > (SELECT AVG(number_of_mistakes) as avg_error_count_per_empl FROM error_count)
+)
+SELECT employee_name, location_id, statements
+FROM incorrect_records
+WHERE employee_name IN (SELECT employee_name FROM suspect_list)
+AND statements LIKE "%cash%";
+
+/*Check if there are any employees in the Incorrect_records table with statements mentioning "cash"
+ that are not in our suspect list. This should be as simple as adding one word.*/
+SELECT *
+FROM incorrect_records
+WHERE statements LIKE "%cash&";
+
+OR
+WITH suspect_list AS(
+SELECT
+employee_name,
+number_of_mistakes
+FROM error_count
+WHERE number_of_mistakes > (SELECT AVG(number_of_mistakes) as avg_error_count_per_empl FROM error_count)
+)
+SELECT employee_name, location_id, statements
+FROM incorrect_records
+WHERE employee_name NOT IN (SELECT employee_name FROM suspect_list)
+AND statements LIKE "%cash%";
