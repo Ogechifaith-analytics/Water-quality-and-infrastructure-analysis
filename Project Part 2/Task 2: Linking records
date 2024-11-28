@@ -122,8 +122,6 @@ ON ws.source_id = v.source_id
 WHERE v.visit_count = 1 AND
 a.true_water_source_score != wq.subjective_quality_score;
 
---
-
 /* JOIN the assigned_employee_id for all the people on our list from the visits table to our query. 
 Remember, our query shows 102 incorrect records, so when we join the employee data, we can see which employees
  made these incorrect records.*/
