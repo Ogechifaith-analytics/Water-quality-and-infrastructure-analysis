@@ -9,7 +9,7 @@ Shared taps
 Taps within homes
 Broken or non-functional taps
 
-image
+![water crisis 1](https://github.com/user-attachments/assets/e2ff9caf-91fe-4c0f-8846-e3d932514b8f)
 
 ## Project overview
 The analysis is centered on:
