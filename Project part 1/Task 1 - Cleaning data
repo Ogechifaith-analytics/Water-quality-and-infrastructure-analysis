@@ -1,0 +1,32 @@
+use md_water_services;
+SELECT 
+* 
+FROM employee;
+
+/*Updating employee emails*/
+SELECT 
+  CONCAT(LOWER(REPLACE(employee_name, " ", ".")), "@ndogowater.gov") AS email
+FROM
+    employee; 
+    /* After getting the employee emails, go ahead and update the table using the UPDATE 
+    function*/
+    UPDATE employee
+SET email = CONCAT(LOWER(REPLACE(employee_name, ' ', '.')), '@ndogowater.gov');
+/* If while updating you get a warning from SQL that you're using a safe mode, remove the 
+safe mode using 
+SET SQL_SAFE_UPDATES = 0; run the safe mode query and then go ahead and re-update */
+
+/* Checking the length of the Phone_number column. To remove spaces, the TRIM function is used after which you 
+check the length of the Phone_number column again. Go ahead and Update using the UPDATE function. Be careful while 
+updating do not the LENGTH funtcion */
+
+SELECT 
+LENGTH(Phone_number)
+FROM employee;
+
+SELECT 
+LENGTH(TRIM(Phone_number))
+FROM employee;
+
+UPDATE employee
+SET Phone_number = TRIM(Phone_number); 
