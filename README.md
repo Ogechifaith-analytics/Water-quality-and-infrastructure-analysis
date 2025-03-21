@@ -9,6 +9,8 @@ The project uses SQL to filter,transform and join data across multiple tables,id
 -Taps within homes
 -Broken or non-functional taps
 
+![vd mcq 2 3](https://github.com/user-attachments/assets/9f9906d5-8d0c-4d72-86e7-1eb9b5745168)
+
 ![water crisis 1](https://github.com/user-attachments/assets/e2ff9caf-91fe-4c0f-8846-e3d932514b8f)
 
 ## Project overview
